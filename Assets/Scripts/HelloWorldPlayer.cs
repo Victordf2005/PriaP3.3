@@ -15,6 +15,10 @@ namespace HelloWorld
 
         public HelloWorldManager helloWorldManager;
 
+        // Evitar que elimine a cor 0 (cor anterior) se, por casualidade,
+        // fora a elixida aleatoriamente ao spanearse
+        private bool firstColorChange = true;
+
         void Awake() {
             helloWorldManager = GameObject.Find("HelloWorldManager").GetComponent<HelloWorldManager>();
         }
@@ -46,7 +50,11 @@ namespace HelloWorld
             }
 
             helloWorldManager.AddColor(newColor);
-            UnListServerRpc(oldColor);
+            if (! firstColorChange) {
+                helloWorldManager.RemoveColor(oldColor);
+            } else {                
+                firstColorChange = false;
+            }
             choosedColor.Value = newColor;
 
             string uc = "";
@@ -54,11 +62,6 @@ namespace HelloWorld
                 uc +=  i + " ";
             }
             Debug.Log("UsedColors: " + helloWorldManager.usedColors.Count + ": " + uc);
-        }
-
-        [ServerRpc]
-        void UnListServerRpc(int color) {
-            helloWorldManager.RemoveColor(color);
         }
 
         [ServerRpc]
@@ -80,9 +83,6 @@ namespace HelloWorld
 
         void Start() {
             if (IsOwner) {
-                // Evitar que elimine a cor 0 (cor anterior) se, por casualidade,
-                // fora a elixida aleatoriamente ao spanearse
-                choosedColor.Value = -1;
                 ChangeColor();
             }
         }
