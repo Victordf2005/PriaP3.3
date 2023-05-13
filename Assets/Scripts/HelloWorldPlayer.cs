@@ -9,15 +9,13 @@ namespace HelloWorld
     {
 
         public NetworkVariable<Vector3> Position = new NetworkVariable<Vector3>();
-        public NetworkVariable<int> choosedColor = new NetworkVariable<int>();
-        //public NetworkList<int> usedColors;
-
+        public NetworkVariable<int> choosedColor = new NetworkVariable<int>();  // cor actual
+        
         public List<Material> materials = new List<Material>();
 
         public HelloWorldManager helloWorldManager;
 
         void Awake() {
-            //usedColors = new NetworkList<int>();
             helloWorldManager = GameObject.Find("HelloWorldManager").GetComponent<HelloWorldManager>();
         }
 
@@ -30,18 +28,16 @@ namespace HelloWorld
 
         public void ChangeColor()
         {
-            SubmitChangeColorServerRpc();
-            //GetComponent<MeshRenderer>().material = materials[choosedColor.Value];
-            
+            SubmitChangeColorServerRpc();            
         }
 
         [ServerRpc]
         void SubmitChangeColorServerRpc(){
             
-            
-            int newColor = -1;  //obligar a entrar en el bucle while
+            int newColor = -1;  //obrigar a entrar no bucle while
             int oldColor = choosedColor.Value;
 
+            // Escollemos unha cor libre aleatoriamente
             while (newColor < 0)  {
                 newColor = Random.Range(0, materials.Count);
                 if (helloWorldManager.usedColors.Contains(newColor)) {
@@ -50,7 +46,7 @@ namespace HelloWorld
             }
 
             helloWorldManager.AddColor(newColor);
-            helloWorldManager.RemoveColor(oldColor);
+            UnListServerRpc(oldColor);
             choosedColor.Value = newColor;
 
             string uc = "";
@@ -58,6 +54,11 @@ namespace HelloWorld
                 uc +=  i + " ";
             }
             Debug.Log("UsedColors: " + helloWorldManager.usedColors.Count + ": " + uc);
+        }
+
+        [ServerRpc]
+        void UnListServerRpc(int color) {
+            helloWorldManager.RemoveColor(color);
         }
 
         [ServerRpc]
@@ -79,6 +80,9 @@ namespace HelloWorld
 
         void Start() {
             if (IsOwner) {
+                // Evitar que elimine a cor 0 (cor anterior) se, por casualidade,
+                // fora a elixida aleatoriamente ao spanearse
+                choosedColor.Value = -1;
                 ChangeColor();
             }
         }
